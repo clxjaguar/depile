@@ -59,7 +59,7 @@ int depile(FILE *fd, const char *time_format, const int keywords_nbr, const char
 	size_t len;
 	int i;
 	int values_found = 0;
-	char **values = malloc((keywords_nbr * sizeof(const char*)));
+	char **values = malloc((keywords_nbr * sizeof(char*)));
 
 	for(i=0; i<keywords_nbr; i++) { values[i] = NULL; }
 
