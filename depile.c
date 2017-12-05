@@ -24,6 +24,14 @@
 #define FREE(x) if (x) { free(x); x=NULL; }
 #define COPY(x, y) if (x) { free(x); } x = malloc(strlen(y)+1); if (x) { strcpy(x, y); }
 
+void print_usage(void) {
+	fprintf(stderr, "Usage: depile [OPTION] [KEYWORDS] [-f FILE1] [-f FILE2] ...\n");
+	fprintf(stderr, "Depile find for given keywords in stdin (by default) or in \n");
+	fprintf(stderr, "given files (with -f) and print unstacked data in columns like in\n");
+	fprintf(stderr, "data files. There is a -t option for adding a localtime current date\n");
+	fprintf(stderr, "and time first column added to each line.\n");
+}
+
 void fprint_time(FILE *outfd, const char *time_format) {
 	char buf[2000];
 	time_t current_time;
@@ -96,6 +104,11 @@ int main(int argc, const char **argv) {
 	char *time_format = NULL;
 	const char **keywords=NULL;
 	unsigned int keywords_count=0;
+
+	if (argc <= 1) {
+		print_usage();
+		return 255;
+	}
 
 	keywords = malloc((argc * sizeof(const char*))+1);
 
