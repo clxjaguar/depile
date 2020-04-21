@@ -25,11 +25,17 @@
 #define COPY(x, y) if (x) { free(x); } x = malloc(strlen(y)+1); if (x) { strcpy(x, y); }
 
 void print_usage(void) {
-	fprintf(stderr, "Usage: depile [OPTION] [KEYWORDS] [-f FILE1] [-f FILE2] ...\n");
-	fprintf(stderr, "Depile find for given keywords in stdin (by default) or in \n");
-	fprintf(stderr, "given files (with -f) and print unstacked data in columns like in\n");
-	fprintf(stderr, "data files. There is a -t option for adding a localtime current date\n");
-	fprintf(stderr, "and time first column added to each line.\n");
+	fprintf(stderr, "Usage:\n");
+	fprintf(stderr, "       depile [OPTIONS] <KEYWORDS> [-f FILE1] [-f FILE2] ...\n\n");
+	fprintf(stderr, "       Depile find for given keywords in stdin (by default) or in files \n");
+	fprintf(stderr, "       and print unstacked data in columns like a tabulated datafile.\n\n");
+	fprintf(stderr, "Options:\n");
+	fprintf(stderr, "       -f [FILE]\n");
+	fprintf(stderr, "              doesn't use stdin, but treat FILE instead. but be placed after others arguments\n");
+	fprintf(stderr, "       -s\n");
+	fprintf(stderr, "              doesn't stop the capture of data at a space character\n");
+	fprintf(stderr, "       -t\n");
+	fprintf(stderr, "              add a localtime current date and time first column added to each line\n");
 }
 
 void fprint_time(FILE *outfd, const char *time_format) {
@@ -54,7 +60,7 @@ void print_entry_and_clear_memory(const char *time_format, const int keywords_nb
 	*values_found=0;
 }
 
-int depile(FILE *fd, const char *time_format, const int keywords_nbr, const char **keywords) {
+int depile(FILE *fd, const char *time_format, const int keywords_nbr, const char **keywords, int stop_at_spaces) {
 	char *line = NULL, *p;
 	size_t len;
 	int i;
@@ -78,7 +84,8 @@ int depile(FILE *fd, const char *time_format, const int keywords_nbr, const char
 				p = values[i];
 				for(;;) {
 					if (!*++p) { break; }
-					if (*p==' ' || *p=='\r' || *p=='\n') { *p='\0'; break; }
+					if (*p=='\r' || *p=='\n')     { *p='\0'; break; }
+					if (stop_at_spaces && *p==' ') { *p='\0'; break; }
 				}
 
 				if (values_found == keywords_nbr) {
@@ -104,6 +111,7 @@ int main(int argc, const char **argv) {
 	char *time_format = NULL;
 	const char **keywords=NULL;
 	unsigned int keywords_count=0;
+	int stop_at_spaces = 1;
 
 	if (argc <= 1) {
 		print_usage();
@@ -118,6 +126,9 @@ int main(int argc, const char **argv) {
 			else if (!strcmp(&argv[i][1], "t")) {
 				COPY(time_format, "%Y-%m-%d %H:%M:%S");
 			}
+			else if (!strcmp(&argv[i][1], "s")) {
+				stop_at_spaces = 0;
+			}
 			else if (!strcmp(&argv[i][1], "f")) {
 				if (!argv[i+1]) {
 					fprintf(stderr, "%s: argument needed\n", argv[i]);
@@ -129,7 +140,7 @@ int main(int argc, const char **argv) {
 					perror(argv[i]); err|=1;
 				}
 				else {
-					depile(fd, time_format, keywords_count, keywords);
+					depile(fd, time_format, keywords_count, keywords, stop_at_spaces);
 					fclose(fd); fd = NULL;
 				}
 				files++;
@@ -146,7 +157,7 @@ int main(int argc, const char **argv) {
 		}
 	}
 	if (!files&&!err) {
-		depile(stdin, time_format, keywords_count, keywords);
+		depile(stdin, time_format, keywords_count, keywords, stop_at_spaces);
 	}
 
 	FREE(time_format);
